@@ -6,8 +6,6 @@ const wxpay = require('../../utils/pay.js')
 
 Page({
   data: {
-    wxlogin: true,
-
     totalScoreToPay: 0,
     goodsList: [],
     isNeedLogistics: 0, // 是否需要物流信息
@@ -25,18 +23,24 @@ Page({
     peisongType: 'kd', // 配送方式 kd,zq 分别表示快递/到店自取
     remark: '',
     shopIndex: -1,
-    pageIsEnd: false
+    pageIsEnd: false,
+
+
+    bindMobileStatus: 0, // 0 未判断 1 已绑定手机号码 2 未绑定手机号码
+    userScore: 0, // 用户可用积分
+    deductionScore: '0' // 本次交易抵扣的积分数
   },
   onShow(){
     if (this.data.pageIsEnd) {
       return
     }
     AUTH.checkHasLogined().then(isLogined => {
-      this.setData({
-        wxlogin: isLogined
-      })
       if (isLogined) {
         this.doneShow()
+      } else {
+        AUTH.authorize().then(res => {
+          this.doneShow()
+        })
       }
     })
     AUTH.wxaCode().then(code => {
@@ -57,7 +61,7 @@ Page({
       //购物车下单
       const res = await WXAPI.shippingCarInfo(token)
       if (res.code == 0) {
-        goodsList = res.data.items
+        goodsList = res.data.items.filter(ele => { return ele.selected })
       }
     }
     this.setData({
@@ -85,7 +89,8 @@ Page({
     const res = await WXAPI.userAmount(wx.getStorageSync('token'))
     if (res.code == 0) {
       this.setData({
-        balance: res.data.balance
+        balance: res.data.balance,
+        userScore: res.data.score
       })
     }
   },
@@ -141,7 +146,8 @@ Page({
       token: loginToken,
       goodsJsonStr: that.data.goodsJsonStr,
       remark: remark,
-      peisongType: that.data.peisongType
+      peisongType: that.data.peisongType,
+      deductionScore: this.data.deductionScore
     };
     if (that.data.kjId) {
       postData.kjid = that.data.kjId
@@ -187,17 +193,30 @@ Page({
         })
         return;
       }
-      if(postData.peisongType == 'zq' && !this.data.mobile) {
-        wx.showToast({
-          title: '请填写手机号码',
-          icon: 'none'
-        })
-        return;
+      const extJsonStr = {}
+      if(postData.peisongType == 'zq') {
+        if(!this.data.name) {
+          wx.showToast({
+            title: '请填写联系人',
+            icon: 'none'
+          })
+          return;
+        }
+        if(!this.data.mobile) {
+          wx.showToast({
+            title: '请填写联系电话',
+            icon: 'none'
+          })
+          return;
+        }
+        extJsonStr['联系人'] = this.data.name
+        extJsonStr['联系电话'] = this.data.mobile
       }
       if(postData.peisongType == 'zq' && this.data.shops) {
         postData.shopIdZt = this.data.shops[this.data.shopIndex].id
         postData.shopNameZt = this.data.shops[this.data.shopIndex].name
       }
+      postData.extJsonStr = JSON.stringify(extJsonStr)
     }
 
     WXAPI.orderCreate(postData).then(function (res) {
@@ -214,7 +233,11 @@ Page({
 
       if (e && "buyNow" != that.data.orderType) {
         // 清空购物车数据
-        WXAPI.shippingCarInfoRemoveAll(loginToken)
+        const keyArrays = []
+        that.data.goodsList.forEach(ele => {
+          keyArrays.push(ele.key)
+        })
+        WXAPI.shippingCarInfoRemoveItem(loginToken, keyArrays.join())
       }
       if (!e) {
         let hasNoCoupons = true
@@ -234,6 +257,26 @@ Page({
           })
           coupons = res.data.couponUserList
         }
+        // 计算积分抵扣规则 userScore
+        let scoreDeductionRules = res.data.scoreDeductionRules
+        if (scoreDeductionRules) {
+          // 如果可叠加，计算可抵扣的最大积分数
+          scoreDeductionRules.forEach(ele => {
+            if (ele.loop) {
+              let loopTimes = Math.floor(that.data.userScore / ele.score) // 按剩余积分取最大
+              let loopTimesMax = Math.floor((res.data.amountTotle + res.data.deductionMoney) / ele.money) // 按金额取最大
+              if (loopTimes > loopTimesMax) {
+                loopTimes = loopTimesMax
+              }
+              ele.score = ele.score * loopTimes
+              ele.money = ele.money * loopTimes
+            }
+          })
+          // 剔除积分数为0的情况
+          scoreDeductionRules = scoreDeductionRules.filter(ele => {
+            return ele.score > 0
+          })
+        }
         
         that.setData({
           totalScoreToPay: res.data.score,
@@ -242,7 +285,9 @@ Page({
           yunPrice: res.data.amountLogistics,
           hasNoCoupons,
           coupons,
-          couponAmount: res.data.couponAmount
+          deductionMoney: res.data.deductionMoney,
+          couponAmount: res.data.couponAmount,
+          scoreDeductionRules
         });
         that.data.pageIsEnd = false
         return;
@@ -255,7 +300,7 @@ Page({
     const balance = this.data.balance
     if (balance || res.data.amountReal*1 == 0) {
       // 有余额
-      const money = res.data.amountReal * 1 - balance*1
+      const money = (res.data.amountReal * 1 - balance*1).toFixed(2)
       if (money <= 0) {
         // 余额足够
         wx.showModal({
@@ -456,7 +501,8 @@ Page({
     const res = await WXAPI.userDetail(wx.getStorageSync('token'))
     if (res.code == 0) {
       this.setData({
-        mobile: res.data.base.mobile
+        bindMobileStatus: res.data.base.mobile ? 1: 2, // 账户绑定的手机号码状态
+        mobile: res.data.base.mobile,
       })
     }
   },
@@ -472,20 +518,14 @@ Page({
     AUTH.wxaCode().then(code => {
       this.data.code = code
     })
-    if (res.code === 10002) {
-      wx.showToast({
-        title: '请先登陆',
-        icon: 'none'
-      })
-      return
-    }
     if (res.code == 0) {
       wx.showToast({
         title: '读取成功',
         icon: 'success'
       })
       this.setData({
-        mobile: res.data
+        mobile: res.data,
+        bindMobileStatus: 1
       })
     } else {
       wx.showToast({
@@ -493,5 +533,18 @@ Page({
         icon: 'none'
       })
     }
+  },
+  deductionScoreChange(event) {
+    this.setData({
+      deductionScore: event.detail,
+    })
+    this.processYunfei()
+  },
+  deductionScoreClick(event) {
+    const { name } = event.currentTarget.dataset;
+    this.setData({
+      deductionScore: name,
+    })
+    this.processYunfei()
   },
 })

@@ -1,5 +1,6 @@
 const WXAPI = require('apifm-wxapi')
 const AUTH = require('../../utils/auth')
+var address_parse = require("../../utils/address_parse")
 Page({
   data: {
     provinces: undefined,// 省份数据数组
@@ -128,7 +129,15 @@ Page({
     const linkMan = e.detail.value.linkMan;
     const address = e.detail.value.address;
     const mobile = e.detail.value.mobile;
-    const code = '322000';
+    if (!this.data.addressData) {
+      wx.showToast({
+        title: '请选择定位',
+        icon: 'none',       
+      })
+      return
+    }
+    const latitude = this.data.addressData.latitude
+    const longitude = this.data.addressData.longitude
     if (linkMan == ""){
       wx.showToast({
         title: '请填写联系人姓名',
@@ -140,6 +149,13 @@ Page({
       wx.showToast({
         title: '请填写手机号码',
         icon: 'none'
+      })
+      return
+    }
+    if (!latitude){
+      wx.showToast({
+        title: '请选择定位',
+        icon: 'none',       
       })
       return
     }
@@ -155,8 +171,9 @@ Page({
       linkMan: linkMan,
       address: address,
       mobile: mobile,
-      code: code,
       isDefault: 'true',
+      latitude,
+      longitude
     }
     if (this.data.pIndex > 0) {
       postData.provinceId = this.data.provinces[this.data.pIndex].id
@@ -187,6 +204,8 @@ Page({
     }
   },
   async onLoad(e) {
+    // this.initFromClipboard('广州市天河区天河东路6号粤电广场北塔2302，徐小姐，18588998859')
+    const _this = this
     if (e.id) { // 修改初始化数据库数据
       const res = await WXAPI.addressDetail(wx.getStorageSync('token'), e.id)
       if (res.code == 0) {
@@ -204,7 +223,34 @@ Page({
       }
     } else {
       this.provinces()
+      wx.getClipboardData({
+        success (res){
+          if (res.data) {
+            _this.initFromClipboard(res.data)
+          }
+        }
+      })
     }
+  },
+  async initFromClipboard (str) {
+    address_parse.smart(str).then(res => {
+      console.log('ggggggg', res);
+      if (res.name && res.phone && res.address) {
+        
+        // 检测到收货地址
+        this.setData({
+          addressData: {
+            provinceId: res.provinceCode,
+            cityId: res.cityCode,
+            districtId: res.countyCode,
+            linkMan: res.name,
+            mobile: res.phone,
+            address: res.address,
+          }
+        })
+        this.provinces(res.provinceCode, res.cityCode, res.countyCode)
+      }
+    })
   },
   deleteAddress: function (e) {
     const id = e.currentTarget.dataset.id;
@@ -291,4 +337,20 @@ Page({
       }
     })
   },
+  chooseLocation() {
+    wx.chooseLocation({
+      success: (res) => {
+        const addressData = this.data.addressData ? this.data.addressData : {}
+        addressData.address = res.address + res.name
+        addressData.latitude = res.latitude
+        addressData.longitude = res.longitude
+        this.setData({
+          addressData
+        })
+      },
+      fail: (e) => {
+        console.error(e)
+      },
+    })
+  }
 })

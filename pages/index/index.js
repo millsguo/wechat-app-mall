@@ -1,5 +1,6 @@
 const WXAPI = require('apifm-wxapi')
 const TOOLS = require('../../utils/tools.js')
+const AUTH = require('../../utils/auth')
 
 const APP = getApp()
 // fixed首次打开不显示标题的bug
@@ -33,7 +34,7 @@ Page({
   },
 
   tabClick: function(e) {
-    wx.setStorageSync("_categoryId", e.currentTarget.id)
+    wx.setStorageSync("_categoryId", e.currentTarget.dataset.id)
     wx.switchTab({
       url: '/pages/category/category',
     })
@@ -70,14 +71,23 @@ Page({
   onLoad: function(e) {
     wx.showShareMenu({
       withShareTicket: true
-    })    
+    })
     const that = this
+    // 读取分享链接中的邀请人编号
+    if (e && e.inviter_id) {
+      wx.setStorageSync('referrer', e.inviter_id)
+    }
+    // 读取小程序码中的邀请人编号
     if (e && e.scene) {
       const scene = decodeURIComponent(e.scene)
       if (scene) {        
         wx.setStorageSync('referrer', scene.substring(11))
       }
     }
+    // 静默式授权注册/登陆
+    AUTH.authorize().then(res => {
+      TOOLS.showTabBarBadge()
+    })
     wx.setNavigationBarTitle({
       title: wx.getStorageSync('mallName')
     })
@@ -269,11 +279,8 @@ Page({
       if (goodsKanjiaSetRes.code == 0) {
         res.data.forEach(ele => {
           const _process = goodsKanjiaSetRes.data.find(_set => {
-            console.log(_set)
             return _set.goodsId == ele.id
           })
-          console.log(ele)
-          console.log(_process)
           if (_process) {
             ele.process = 100 * _process.numberBuy / _process.number
             ele.process = ele.process.toFixed(0)
@@ -286,7 +293,7 @@ Page({
     }
   },
   goCoupons: function (e) {
-    wx.navigateTo({
+    wx.switchTab({
       url: "/pages/coupons/index"
     })
   },
@@ -302,22 +309,15 @@ Page({
       }
     })
   },
-  bindinput(e) {
-    this.setData({
-      inputVal: e.detail.value
-    })
-  },
-  bindconfirm(e) {
-    this.setData({
-      inputVal: e.detail.value
-    })
-    wx.navigateTo({
-      url: '/pages/goods/list?name=' + this.data.inputVal,
-    })
-  },
   goSearch(){
     wx.navigateTo({
-      url: '/pages/goods/list?name=' + this.data.inputVal,
+      url: '/pages/search/index'
+    })
+  },
+  goNotice(e) {
+    const id = e.currentTarget.dataset.id
+    wx.navigateTo({
+      url: '/pages/notice/show?id=' + id,
     })
   }
 })

@@ -1,5 +1,5 @@
-<navigator url="/pages/shop/select">
-  <view wx:if="{{shopInfo}}" class="shops-container">
+<navigator wx:if="{{shopInfo}}" url="/pages/shop/select">
+  <view class="shops-container">
     <view class="l">
       <image src="/images/order-details/icon-address.png"></image>
       <text>{{shopInfo.name}}</text>
@@ -10,16 +10,13 @@
     </view>
   </view>
 </navigator>
+<van-search value="{{ value }}" placeholder="请输入搜索关键词" readonly shape="round" bindtap="goSearch" />
 <view class="swiper-container">
   <swiper class="swiper1" indicator-dots="true" indicator-active-color="#fff" autoplay circular>
     <swiper-item wx:for="{{banners}}" wx:key="id">
-      <image  mode="aspectFill" bindtap="tapBanner" data-url="{{item.linkUrl}}" src="{{item.picUrl}}" />
+      <image mode="aspectFill" bindtap="tapBanner" data-url="{{item.linkUrl}}" src="{{item.picUrl}}" />
     </swiper-item>
   </swiper>
-  <view class="search">
-    <input type="text" placeholder="输入搜索关键词" value="{{name}}" bindinput="bindinput" bindconfirm="bindconfirm"></input>
-    <image src="/images/icon/search.svg" bindtap="goSearch"></image>
-  </view>
   <view wx:if="{{goodsDynamic}}" class="goodsDynamic">
     <swiper class="swiper2" autoplay circular vertical>
       <navigator wx:for="{{goodsDynamic}}" wx:key="index" url="/pages/goods-details/index?id={{item.goodsId}}">
@@ -34,21 +31,24 @@
   </view>
 </view>
 <view class="notice-box" wx:if="{{noticeList}}">
-  <view class="notice">
-    <image class="notice_icon" src="/images/notice.png"></image>
-    <swiper class="notice_swiper" vertical autoplay circular>
-      <navigator wx:for="{{noticeList.dataList}}" wx:key="id" url="/pages/notice/show?id={{item.id}}">
-        <swiper-item>
-          <view class="notice_itemr">{{item.title}}</view>
-        </swiper-item>
-      </navigator>
-    </swiper>
-  </view>
-  <view class="more"><navigator url="/pages/notice/index">更多 ></navigator></view>
+  <swiper class="notice_swiper" vertical autoplay circular interval="8000">
+    <swiper-item wx:for="{{noticeList.dataList}}" wx:key="id">
+      <van-notice-bar
+        wx:if="{{noticeList}}"
+        left-icon="volume-o"
+        mode="link"
+        text="{{ item.title }}"
+        background="#FFFFFF"
+        data-id="{{ item.id }}"
+        speed="30"
+        bind:click="goNotice"
+      />
+    </swiper-item>
+  </swiper>
 </view>
 <view class="category-box">
   <view class="category-list" wx:for="{{categories}}" wx:key="id">
-    <view class="category-column {{activeCategoryId == item.id ? 'type-item-on' : ''}}" bindtap="tabClick" id="{{item.id}}">
+    <view class="category-column {{activeCategoryId == item.id ? 'type-item-on' : ''}}" bindtap="tabClick" data-id="{{item.id}}">
       <image mode="aspectFill" class="category-imgbox" src="{{item.icon}}"></image>
       <view class="category-title">{{item.name}}</view>
     </view>          

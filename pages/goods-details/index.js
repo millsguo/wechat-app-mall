@@ -25,8 +25,13 @@ Page({
     canSubmit: false, //  选中规格尺寸时候是否允许加入购物车
     shopType: "addShopCar", //购物类型，加入购物车或立即购买，默认为加入购物车
   },
-  async onLoad(e) {
+  onLoad(e) {
     // e.id = 122843
+    // 读取分享链接中的邀请人编号
+    if (e && e.inviter_id) {
+      wx.setStorageSync('referrer', e.inviter_id)
+    }
+    // 读取小程序码中的邀请人编号
     if (e && e.scene) {
       const scene = decodeURIComponent(e.scene) // 处理扫码进商品详情页面的逻辑
       if (scene && scene.split(',').length >= 2) {
@@ -34,6 +39,10 @@ Page({
         wx.setStorageSync('referrer', scene.split(',')[1])
       }
     }
+    // 静默式授权注册/登陆
+    AUTH.authorize().then(res => {
+      
+    })
     this.data.goodsId = e.id
     const that = this
     this.data.kjJoinUid = e.kjJoinUid    
@@ -114,8 +123,9 @@ Page({
     })
   },
   async getGoodsDetailAndKanjieInfo(goodsId) {
+    const token = wx.getStorageSync('token')
     const that = this;
-    const goodsDetailRes = await WXAPI.goodsDetail(goodsId)
+    const goodsDetailRes = await WXAPI.goodsDetail(goodsId, token ? token : '')
     const goodsKanjiaSetRes = await WXAPI.kanjiaSet(goodsId)
     if (goodsDetailRes.code == 0) {
       if (goodsDetailRes.data.properties) {
@@ -302,7 +312,12 @@ Page({
     }
     // 计算 sku 价格
     if (this.data.canSubmit) {
-      const res = await WXAPI.goodsPrice(this.data.goodsDetail.basicInfo.id, this.data.propertyChildIds)
+      const token = wx.getStorageSync('token')
+      const res = await WXAPI.goodsPriceV2({
+        token: token ? token : '',
+        goodsId: this.data.goodsDetail.basicInfo.id,
+        propertyChildIds: this.data.propertyChildIds
+      })
       if (res.code == 0) {
         price = res.data.price
         if (this.data.shopType == 'toPingtuan') {
@@ -534,6 +549,7 @@ Page({
   buliduBuyNowInfo: function(shoptype) {
     var shopCarMap = {};
     shopCarMap.goodsId = this.data.goodsDetail.basicInfo.id;
+    shopCarMap.shopId = this.data.goodsDetail.basicInfo.shopId;
     shopCarMap.pic = this.data.goodsDetail.basicInfo.pic;
     shopCarMap.name = this.data.goodsDetail.basicInfo.name;
     // shopCarMap.label=this.data.goodsDetail.basicInfo.id; 规格尺寸 
@@ -576,6 +592,17 @@ Page({
 
     buyNowInfo.shopList.push(shopCarMap);
     buyNowInfo.kjId = this.data.kjId;
+    if (this.data.shopSubdetail) {
+      buyNowInfo.shopInfo = this.data.shopSubdetail.info
+    } else {
+      buyNowInfo.shopInfo = {
+        id: 0,
+        name: "其他",
+        pic: null,
+        serviceDistance: 99999999,
+      }
+    }
+    
     return buyNowInfo;
   },
   onShareAppMessage() {
@@ -601,6 +628,15 @@ Page({
       goodsId: goodsId
     }).then(function(res) {
       if (res.code == 0) {
+        res.data.forEach(ele => {
+          if (ele.goods.goodReputation == 0) {
+            ele.goods.goodReputation = 1
+          } else if (ele.goods.goodReputation == 1) {
+            ele.goods.goodReputation = 3
+          } else if (ele.goods.goodReputation == 2) {
+            ele.goods.goodReputation = 5
+          }
+        })
         that.setData({
           reputation: res.data
         });
@@ -883,5 +919,12 @@ Page({
       icon: 'none'
     })
     console.error(e)
+  },
+  previewImage(e) {
+    const url = e.currentTarget.dataset.url
+    wx.previewImage({
+      current: url, // 当前显示图片的http链接
+      urls: [url] // 需要预览的图片http链接列表
+    })
   }
 })

@@ -64,7 +64,7 @@ App({
         wx.hideToast()
       }
     })
-    WXAPI.queryConfigBatch('mallName,WITHDRAW_MIN,ALLOW_SELF_COLLECTION,order_hx_uids,subscribe_ids,share_profile,adminUserIds,goodsDetailSkuShowType,shopMod,needIdCheck').then(res => {
+    WXAPI.queryConfigBatch('mallName,WITHDRAW_MIN,ALLOW_SELF_COLLECTION,order_hx_uids,subscribe_ids,share_profile,adminUserIds,goodsDetailSkuShowType,shopMod,needIdCheck,balance_pay_pwd').then(res => {
       if (res.code == 0) {
         res.data.forEach(config => {
           wx.setStorageSync(config.key, config.value);
@@ -84,12 +84,6 @@ App({
         wx.getShareInfo({
           shareTicket: e.shareTicket,
           success: res => {
-            console.log(res)
-            console.log({
-              referrer: e.query.inviter_id,
-              encryptedData: res.encryptedData,
-              iv: res.iv
-            })
             wx.login({
               success(loginRes) {
                 if (loginRes.code) {
@@ -113,13 +107,14 @@ App({
       }
     }
     // 自动登录
-    AUTH.checkHasLogined().then(async isLogined => {
+    AUTH.checkHasLogined().then(isLogined => {
       if (!isLogined) {
         AUTH.login()
       }
     })
   },
   globalData: {
-    isConnected: true
+    isConnected: true,
+    sdkAppID: CONFIG.sdkAppID
   }
 })
