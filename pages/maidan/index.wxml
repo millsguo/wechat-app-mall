@@ -6,7 +6,7 @@
   clearable
 />
 <van-field
-  wx:if="{{ balance_pay_pwd && payType =='balance' }}"
+  wx:if="{{ balance_pay_pwd == '1' && payType =='balance' }}"
   label="交易密码"
   password
   model:value="{{ pwd }}"
@@ -30,4 +30,20 @@
   <van-button type="primary" block bind:click="bindSave">确认支付</van-button>
 </view>
 
-<van-dialog id="van-dialog-auth-login" bind:getuserinfo="processLogin" />
+
+<bind-mobile
+  title="绑定手机号码"
+  alarmText="为保障您的资金安全，请先绑定手机号码"
+  show="{{ bindMobileShow }}"
+  bind:cancel="bindMobileCancel"
+  bind:ok="bindMobileOk"
+/>
+
+<payment
+  money="{{ money }}"
+  remark="优惠买单 ：{{ money }}"
+  nextAction="{{ nextAction }}"
+  show="{{ paymentShow }}"
+  bind:cancel="paymentCancel"
+  bind:ok="paymentOk"
+/>

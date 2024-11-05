@@ -12,41 +12,22 @@ Page({
     this.getUserApiInfo()
   },
   onShow: function () {
-    AUTH.wxaCode().then(code => {
-      this.data.code = code
+  },
+  bindMobile() {
+    this.setData({
+      bindMobileShow: true
     })
   },
-  getPhoneNumber: function(e) {
-    if (!e.detail.errMsg || e.detail.errMsg != "getPhoneNumber:ok") {
-      wx.showModal({
-        title: '提示',
-        content: e.detail.errMsg,
-        showCancel: false
-      })
-      return;
-    }
-    WXAPI.bindMobileWxapp(wx.getStorageSync('token'), this.data.code, e.detail.encryptedData, e.detail.iv).then(res => {
-      AUTH.wxaCode().then(code => {
-        this.data.code = code
-      })
-      if (res.code === 10002) {
-        AUTH.openLoginDialog()
-        return
-      }
-      if (res.code == 0) {
-        wx.showToast({
-          title: '绑定成功',
-          icon: 'success',
-          duration: 2000
-        })
-        this.getUserApiInfo();
-      } else {
-        wx.showModal({
-          title: '提示',
-          content: res.msg,
-          showCancel: false
-        })
-      }
+  bindMobileOk(e) {
+    console.log(e.detail); // 这里是组件里data的数据
+    this.setData({
+      bindMobileShow: false
+    })
+    this.getUserApiInfo()
+  },
+  bindMobileCancel() {
+    this.setData({
+      bindMobileShow: false
     })
   },
   async getUserApiInfo() {
@@ -76,7 +57,7 @@ Page({
       nick: this.data.nick
     }
     if (this.data.avatarUrlTmpFile) {
-      const res = await WXAPI.uploadFile(wx.getStorageSync('token'), this.data.avatarUrlTmpFile)
+      const res = await WXAPI.uploadFileV2(wx.getStorageSync('token'), this.data.avatarUrlTmpFile)
       if (res.code == 0) {
         postData.avatarUrl = res.data.url
       }
@@ -102,16 +83,12 @@ Page({
       })
     }, 1000);
   },
-  chooseImage() {
-    const _this = this
-    wx.chooseImage({
-      count: 1,
-      success (res) {
-        _this.setData({
-          avatarUrl: res.tempFilePaths[0],
-          avatarUrlTmpFile: res.tempFilePaths[0]
-        })
-      }
+  async onChooseAvatar(e) {
+    console.log(e);
+    const avatarUrl = e.detail.avatarUrl
+    this.setData({
+      avatarUrl: avatarUrl,
+      avatarUrlTmpFile: avatarUrl
     })
   },
   bindPickerChange: function(e) {

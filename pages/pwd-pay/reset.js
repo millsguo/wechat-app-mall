@@ -8,15 +8,12 @@ Page({
 
   },
   onShow: function () {
-    AUTH.wxaCode().then(code => {
-      this.data.code = code
-    })
     this.getUserApiInfo()
   },
   async getUserApiInfo() {
     const res = await WXAPI.userDetail(wx.getStorageSync('token'))
     if (res.code == 2000) {
-      AUTH.openLoginDialog()
+      AUTH.login(this)
       return
     }
     if (res.code == 0) {
@@ -28,7 +25,7 @@ Page({
   async sendSms() {
     const res = await WXAPI.smsValidateCodeByToken(wx.getStorageSync('token'))
     if (res.code == 2000) {
-      AUTH.openLoginDialog()
+      AUTH.login(this)
       return
     }
     if (res.code == 0) {
@@ -100,7 +97,7 @@ Page({
     }
     const res = await WXAPI.resetPayPassword(this.data.mobile, this.data.code, this.data.pwd)
     if (res.code == 2000) {
-      AUTH.openLoginDialog()
+      AUTH.login(this)
       return
     }
     if (res.code != 0) {
@@ -119,47 +116,21 @@ Page({
       })
     }, 1000);
   },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
+  bindMobile() {
+    this.setData({
+      bindMobileShow: true
+    })
   },
-  getPhoneNumber: function(e) {
-    if (!e.detail.errMsg || e.detail.errMsg != "getPhoneNumber:ok") {
-      wx.showModal({
-        title: '提示',
-        content: e.detail.errMsg,
-        showCancel: false
-      })
-      return;
-    }
-    WXAPI.bindMobileWxapp(wx.getStorageSync('token'), this.data.code, e.detail.encryptedData, e.detail.iv).then(res => {
-      AUTH.wxaCode().then(code => {
-        this.data.code = code
-      })
-      if (res.code === 10002) {
-        AUTH.openLoginDialog()
-        return
-      }
-      if (res.code == 0) {
-        wx.showToast({
-          title: '绑定成功',
-          icon: 'success',
-          duration: 2000
-        })
-        this.getUserApiInfo();
-      } else {
-        wx.showModal({
-          title: '提示',
-          content: res.msg,
-          showCancel: false
-        })
-      }
+  bindMobileOk(e) {
+    console.log(e.detail); // 这里是组件里data的数据
+    this.setData({
+      bindMobileShow: false
+    })
+    this.getUserApiInfo()
+  },
+  bindMobileCancel() {
+    this.setData({
+      bindMobileShow: false
     })
   },
 })

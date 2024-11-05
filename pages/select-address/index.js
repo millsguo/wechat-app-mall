@@ -38,8 +38,6 @@ Page({
     AUTH.checkHasLogined().then(isLogined => {
       if (isLogined) {
         this.initShippingAddress();
-      } else {
-        AUTH.openLoginDialog()
       }
     })
   },
@@ -69,15 +67,5 @@ Page({
   onPullDownRefresh() {
     this.initShippingAddress()
     wx.stopPullDownRefresh()
-  },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
   },
 })

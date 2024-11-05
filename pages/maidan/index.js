@@ -1,5 +1,4 @@
 const WXAPI = require('apifm-wxapi')
-const wxpay = require('../../utils/pay.js')
 const AUTH = require('../../utils/auth')
 
 Page({
@@ -15,7 +14,7 @@ Page({
   onShow () {
     AUTH.checkHasLogined().then(isLogined => {
       if (!isLogined) {
-        AUTH.openLoginDialog()
+        AUTH.login(this)
       } else {
         this.userAmount()
       }
@@ -47,13 +46,22 @@ Page({
       return
     }
     if (this.data.payType == 'balance') {
-      if (this.data.balance_pay_pwd && !this.data.pwd) {
+      if (this.data.balance_pay_pwd == '1' && !this.data.pwd) {
         wx.showToast({
           title: '请输入交易密码',
           icon: 'none'
         })
         return
       }
+    }
+    // 判断是否需要绑定手机号码
+    // https://www.yuque.com/apifm/nu0f75/zgf8pu
+    const resUserDetail = await WXAPI.userDetail(wx.getStorageSync('token'))
+    if (resUserDetail.code == 0 && !resUserDetail.data.base.mobile) {
+      this.setData({
+        bindMobileShow: true
+      })
+      return
     }
     const res = await WXAPI.payBillV2({
       token: wx.getStorageSync('token'),
@@ -102,18 +110,16 @@ Page({
         showCancel: false
       })
     } else {
-      wxpay.wxpay('paybill', wxpayAmount, 0, "/pages/asset/index", { money: amount});
-    }
-  },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
+      this.setData({
+        money: wxpayAmount,
+        paymentShow: true,
+        nextAction: {
+          type: 4,
+          uid: wx.getStorageSync('uid'),
+          money: amount
+        }
       })
-      return;
     }
-    AUTH.register(this);
   },
   payTypeChange(event) {
     this.setData({
@@ -125,5 +131,30 @@ Page({
     this.setData({
       payType: name,
     });
+  },
+  bindMobileOk(e) {
+    console.log(e.detail); // 这里是组件里data的数据
+    this.setData({
+      bindMobileShow: false
+    })
+  },
+  bindMobileCancel() {
+    this.setData({
+      bindMobileShow: false
+    })
+  },
+  paymentOk(e) {
+    console.log(e.detail); // 这里是组件里data的数据
+    this.setData({
+      paymentShow: false
+    })
+    wx.redirectTo({
+      url: '/pages/asset/index',
+    })
+  },
+  paymentCancel() {
+    this.setData({
+      paymentShow: false
+    })
   },
 })

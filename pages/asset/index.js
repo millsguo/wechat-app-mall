@@ -10,7 +10,6 @@ Page({
    * 页面的初始数据
    */
   data: {
-    wxlogin: true,
     balance: 0.00,
     freeze: 0,
     score: 0,
@@ -31,58 +30,38 @@ Page({
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad: function (options) {
-    const that = this;
-    wx.getSystemInfo({
-      success: function (res) {
-        that.setData({
-          sliderLeft: (res.windowWidth / that.data.tabs.length - sliderWidth) / 2,
-          sliderOffset: res.windowWidth / that.data.tabs.length * that.data.activeIndex
-        });
-      }
-    });
-  },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady: function () {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow: function () {
-    AUTH.checkHasLogined().then(isLogined => {
+  onLoad(options) {
+    const withdrawal = wx.getStorageSync('withdrawal')
+    if (withdrawal == '1') {
       this.setData({
-        wxlogin: isLogined
+        withdrawal,
+        tabs: ["资金明细", "提现记录", "押金记录"]
       })
+    } else {
+      this.setData({
+        tabs: ["资金明细", "押金记录"]
+      })
+    }
+    AUTH.checkHasLogined().then(isLogined => {
       if (isLogined) {
-        this.doneShow();
+        this.initData()
+      } else {
+        getApp().loginOK = () => {
+          this.initData()
+        }
       }
     })
   },
-  doneShow: function () {
+  onShow() {
+  },
+  initData() {
     const _this = this
     const token = wx.getStorageSync('token')
-    if (!token) {
-      this.setData({
-        wxlogin: false
-      })
-      return
-    }
     WXAPI.userAmount(token).then(function (res) {
       if (res.code == 700) {
         wx.showToast({
           title: '当前账户存在异常',
           icon: 'none'
-        })
-        return
-      }
-      if (res.code == 2000) {
-        this.setData({
-          wxlogin: false
         })
         return
       }
@@ -112,8 +91,7 @@ Page({
     const _this = this
     WXAPI.cashLogsV2({
       token: wx.getStorageSync('token'),
-      page:1,
-      pageSize:50
+      page:1
     }).then(res => {
       if (res.code == 0) {
         _this.setData({
@@ -168,24 +146,13 @@ Page({
   },
   tabClick: function (e) {
     this.setData({
-      sliderOffset: e.currentTarget.offsetLeft,
-      activeIndex: e.currentTarget.id
+      activeIndex: e.detail.index
     });
-    this.fetchTabData(e.currentTarget.id)
+    this.fetchTabData(e.detail.index)
   },
   cancelLogin(){
     wx.switchTab({
       url: '/pages/my/index'
     })
-  },
-  processLogin(e){
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
   },
 })

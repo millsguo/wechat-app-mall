@@ -1,14 +1,24 @@
 .header-box {
-  padding: 32rpx;
-  padding-bottom: 64rpx;
+  padding-right: 32rpx;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   color: #333;
+}
+.header-box-left {
+  display: flex;
+  align-items: center;
 }
 .header-box .avatar {
   width: 128rpx;
   height: 128rpx;
+  margin: 20rpx;
   border-radius: 50%;
+}
+.header-box .avatar-img {
+  width: 128rpx;
+  height: 128rpx;
+  margin-left: -30rpx;
 }
 .header-box .btn {
   margin-left: 32rpx;
@@ -16,6 +26,16 @@
 .header-box .r {
   margin-left: 32rpx;
   font-size: 28rpx;
+}
+.header-box .user-code {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.header-box .user-code .txt {
+  font-size: 24rpx;
+  color: #666;
 }
 
 page,view,image,input {
@@ -30,15 +50,16 @@ page,view,image,input {
 }
 
 .asset {
+  width: 100vw;
   display: flex;
   border-top: 1px solid #eee;
   padding-top:20rpx;
   padding-bottom:20rpx;
 }
 .asset .item {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  width:187rpx;
   text-align: center;
   font-size: 24rpx;
   line-height: 20px;
@@ -134,4 +155,12 @@ page,view,image,input {
 }
 .login-box .btn {
   margin: 88rpx 32rpx;
+}
+.user-level {
+  color: #e64340;
+}
+.login-btn {
+  width: 100%;
+  padding: 32rpx;
+  padding-left: 48rpx;
 }

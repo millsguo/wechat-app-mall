@@ -26,7 +26,7 @@
           </block>
         </view>
         <view class="arrow-right">
-          <image class="arrow" src="/images/arrow-right.png"></image>
+          <van-icon name="arrow" />
         </view>
       </view>
       <view wx:else class="wuliu-box">
@@ -38,6 +38,17 @@
           <view class="wuliu-text">暂无物流信息</view>
         </view>
       </view>
+      <van-cell-group wx:if="{{ orderDetail.orderLogisticsShippers && orderDetail.orderLogisticsShippers.length > 0 }}">
+        <van-cell
+          wx:for="{{ orderDetail.orderLogisticsShippers }}"
+          wx:key="id"
+          title="{{ item.shipperName }}: {{ item.trackingNumber }}"
+          label="{{ item.tracesLast }}"
+          center
+          is-link
+          url="/pages/wuliu/index?id={{ item.orderId }}&trackingNumber={{ item.trackingNumber }}"
+        />
+      </van-cell-group>
       <view class="address-sec">
         <view class="icon-box">
           <image class="icon" src="/images/order-details/icon-address.png"></image>
@@ -51,12 +62,29 @@
       </view>
     </block>
   </view>
-  <view wx:if="{{orderDetail.orderInfo.hxNumber && orderDetail.orderInfo.status > 0}}" class="goods-list">
-    <view class="list-title hx-title">核销码</view>
-    <canvas class="hx-canvas" canvas-id="qrcode" />
+  <view wx:if="{{ hxNumberQrcode }}" class="goods-list">
+    <view class="list-title hx-title">核销码「出示给店员或者长按下载」</view>
+    <image class="hx-canvas" src="{{ hxNumberQrcode }}" mode="widthFix" show-menu-by-longpress></image>
   </view>
   <view class="goods-list">
     <view class="list-title">商品信息</view>
+    <wxs module="goodsDetailPage">
+    module.exports = {
+      url : function(item) {
+        if (item.supplyType == 'cps_jd') {
+          return '/packageCps/pages/goods-details/cps-jd?id=' + item.goodsId
+        } else if (item.supplyType == 'vop_jd') {
+          return '/pages/goods-details/vop?id=' + item.yyId + '&goodsId=' + item.id
+        } else if (item.supplyType == 'cps_pdd') {
+          return '/packageCps/pages/goods-details/cps-pdd?id=' + item.goodsId
+        } else if (item.supplyType == 'cps_taobao') {
+          return '/packageCps/pages/goods-details/cps-taobao?id=' + item.goodsId
+        } else {
+          return '/pages/goods-details/index?id=' + item.goodsId
+        }
+      }
+    }
+    </wxs>
     <form bindsubmit="submitReputation">
       <block wx:for="{{orderDetail.goods}}" wx:key="id">
         <van-card
@@ -65,7 +93,7 @@
           desc="{{item.property}}"
           title="{{item.goodsName}}"
           thumb="{{item.pic}}"
-          thumb-link="/pages/goods-details/index?id={{item.goodsId}}"
+          thumb-link="{{ goodsDetailPage.url(item) }}"
           centered
           lazy-load
         />
@@ -105,6 +133,12 @@
       </view>
     </form>
   </view>
+  <view wx:if="{{ orderStores && orderStores.length > 0 }}" class="vw100">
+    <van-cell-group title="日期详情">
+      <van-cell wx:for="{{ orderStores }}" wx:key="id" title="{{ item.remark }} X{{ item.stores }}" value="{{ item.day }}" />
+    </van-cell-group>
+  </view>
+  <view wx:if="{{ orderStores && orderStores.length > 0 }}" class="space"></view>
   <view class="peisong-way" hidden="true">
     <view class="row-box">
       <view class="row-label">配送方式</view>
@@ -124,18 +158,39 @@
       <image mode="widthFix" wx:if="{{item.type == 1}}" src="{{item.coupon}}" style="max-width:100%;"></image>
     </view>
   </view>
-  <view class="goods-info">
-    <view class="row-box">
-      <view class="row-label">商品金额</view>
-      <view class="right-text">¥ {{orderDetail.orderInfo.amount}}</view>
-    </view>
-    <view class="row-box">
-      <view class="row-label">运费</view>
-      <view class="right-text">+ ¥ {{orderDetail.orderInfo.amountLogistics}}</view>
-    </view>
-    <view class="row-box">
-      <view class="row-label">应付总额</view>
-      <view class="right-text">¥ {{orderDetail.orderInfo.amountReal}}</view>
-    </view>
+  <view style="width: 100vw;">
+    <van-cell-group title="订单金额">
+      <van-cell
+        title="商品金额"
+        value="¥ {{orderDetail.orderInfo.amount}}"
+      />
+      <van-cell
+        title="运费"
+        value="¥ {{orderDetail.orderInfo.amountLogistics}}"
+      />
+      <block wx:if="{{ orderDetail.orderAdditionalPrices }}">
+        <van-cell
+          wx:for="{{ orderDetail.orderAdditionalPrices }}" wx:key="id"
+          title="{{ item.name }}"
+          value="{{ '￥' + item.amount }}"
+        />
+      </block>
+      <van-cell
+        title="应付总额"
+        value="¥ {{orderDetail.orderInfo.amountReal}}"
+      />
+    </van-cell-group>
   </view>
 </view>
+
+<van-cell-group wx:if="{{ shopIotDevices && shopIotDevices.length > 0 }}" title="设备控制">
+  <van-cell wx:for="{{ shopIotDevices }}" wx:key="id" title="{{ item.name }}" value="控制" is-link data-idx="{{ index }}" bind:click="shopIotCmds" />
+</van-cell-group>
+<van-action-sheet
+  show="{{ cmdListShow }}"
+  actions="{{ cmdList }}"
+  cancel-text="取消"
+  bind:close="cmdClose"
+  bind:cancel="cmdClose"
+  bind:select="cmdSelect"
+/>

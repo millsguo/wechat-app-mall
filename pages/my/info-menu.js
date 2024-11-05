@@ -8,9 +8,6 @@ Page({
 
   },
   onShow: function () {
-    AUTH.wxaCode().then(code => {
-      this.data.code = code
-    })
     this.getUserApiInfo()
   },
   async getUserApiInfo() {
@@ -24,10 +21,6 @@ Page({
       if (this.data.order_hx_uids && this.data.order_hx_uids.indexOf(res.data.base.id) != -1) {
         _data.canHX = true // 具有扫码核销的权限
       }
-      const adminUserIds = wx.getStorageSync('adminUserIds')
-      if (adminUserIds && adminUserIds.indexOf(res.data.base.id) != -1) {
-        _data.isAdmin = true
-      }
       if (res.data.peisongMember && res.data.peisongMember.status == 1) {
         _data.memberChecked = false
       } else {
@@ -36,47 +29,21 @@ Page({
       this.setData(_data);
     }
   },
-  getPhoneNumber: function(e) {
-    if (!e.detail.errMsg || e.detail.errMsg != "getPhoneNumber:ok") {
-      wx.showModal({
-        title: '提示',
-        content: e.detail.errMsg,
-        showCancel: false
-      })
-      return;
-    }
-    WXAPI.bindMobileWxapp(wx.getStorageSync('token'), this.data.code, e.detail.encryptedData, e.detail.iv).then(res => {
-      AUTH.wxaCode().then(code => {
-        this.data.code = code
-      })
-      if (res.code === 10002) {
-        AUTH.openLoginDialog()
-        return
-      }
-      if (res.code == 0) {
-        wx.showToast({
-          title: '绑定成功',
-          icon: 'success',
-          duration: 2000
-        })
-        this.getUserApiInfo();
-      } else {
-        wx.showModal({
-          title: '提示',
-          content: res.msg,
-          showCancel: false
-        })
-      }
+  bindMobile() {
+    this.setData({
+      bindMobileShow: true
     })
   },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
+  bindMobileOk(e) {
+    console.log(e.detail); // 这里是组件里data的数据
+    this.setData({
+      bindMobileShow: false
+    })
+    this.getUserApiInfo()
+  },
+  bindMobileCancel() {
+    this.setData({
+      bindMobileShow: false
+    })
   },
 })

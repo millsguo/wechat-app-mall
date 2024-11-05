@@ -1,6 +1,6 @@
 const WXAPI = require('apifm-wxapi')
 const AUTH = require('../../utils/auth')
-
+const CONFIG = require('../../config.js')
 Page({
 
   /**
@@ -17,10 +17,8 @@ Page({
     if (e && e.inviter_id) {
       wx.setStorageSync('referrer', e.inviter_id)
     }
-    // 静默式授权注册/登陆
-    AUTH.authorize().then(res => {
-     
-    })
+    // 弹出编辑昵称头像框
+    getApp().initNickAvatarUrlPOP(this)
   },
   onShow() {
   },
@@ -74,11 +72,36 @@ Page({
   onShareAppMessage() {    
     return {
       title: '申请开票',
-      imageUrl: 'https://cdn.it120.cc/apifactory/2019/06/13/13f5f43c-4819-414d-88f5-968e32facd79.png',
       path: '/pages/invoice/apply?inviter_id=' + wx.getStorageSync('uid')
     }
   },
+  onShareTimeline() {    
+    return {
+      title: '申请开票',
+      query: 'inviter_id=' + wx.getStorageSync('uid'),
+      imageUrl: wx.getStorageSync('share_pic')
+    }
+  },
   async bindSave(e) {
+    const invoice_subscribe_ids = wx.getStorageSync('invoice_subscribe_ids')
+    if (invoice_subscribe_ids) {
+      wx.requestSubscribeMessage({
+        tmplIds: invoice_subscribe_ids.split(','),
+        success(res) {
+          console.log(res)
+        },
+        fail(err) {
+          console.error(err)
+        },
+        complete: (res) => {
+          this._bindSave(e)
+        },
+      })
+    } else {
+      this._bindSave(e)
+    }
+  },
+  async _bindSave(e) {
     // 提交保存
     let comName = e.detail.value.comName;
     let tfn = e.detail.value.tfn;
@@ -86,6 +109,7 @@ Page({
     let amount = e.detail.value.amount;
     let consumption = e.detail.value.consumption;
     let remark = e.detail.value.remark;
+    let email = e.detail.value.email
     let address = e.detail.value.address;
     let bank = e.detail.value.bank;
     if (!mobile) {
@@ -116,6 +140,13 @@ Page({
       })
       return
     }
+    if (!email) {
+      wx.showToast({
+        title: '请填写邮箱地址',
+        icon: 'none'
+      })
+      return
+    }
     if (!amount || amount*1 < 100) {
       wx.showToast({
         title: '开票金额不能低于100',
@@ -134,8 +165,15 @@ Page({
       amount,
       consumption,
       remark,
+      email,
       extJsonStr: JSON.stringify(extJsonStr)
     }).then(res => {
+      if (res.code == 2000) {
+        wx.navigateTo({
+            url: '/pages/login/index',
+        })
+        return
+      }
       if (res.code == 0) {
         wx.showModal({
           title: '成功',

@@ -14,7 +14,7 @@
 
 ## 扫码体验
 
-<img src="https://cdn.it120.cc/apifactory/2019/06/28/a8304003-3218-4a47-95cf-84d82ebdc07b.jpg" width="200px">
+<img src="https://dcdn.it120.cc/2022/12/31/0215c085-d4d1-43e4-bd7d-0e7336eaa661.jpeg" width="200px">
 
 ## 详细配置/使用教程
 
@@ -24,18 +24,27 @@
 
 [点击这里找答案，可用关键词搜索](https://www.it120.cc/help.html)
 
-## 其他开源模板
-
-| 舔果果小铺（升级版） | 面馆风格小程序 | AI名片 |
-| :------: | :------: | :------: |
-| <img src="https://dcdn.it120.cc/2020/08/30/fd095c58-e655-4785-af0a-89e0b4da7cfe.jpg" width="200px"> | <img src="https://cdn.it120.cc/apifactory/2019/03/29/9e30cfe31eabcd218eb9c434f17e9295.jpg" width="200px"> | <img src="https://cdn.it120.cc/apifactory/2018/12/18/c2324da4eea91602f385db5b523b13ca.jpg" width="200px"> | 
-| [开源地址](https://github.com/gooking/TianguoguoXiaopu) | [开源地址](https://gitee.com/javazj/noodle_shop_procedures) | [开源地址](https://github.com/gooking/visitingCard) |
+## 其他优秀开源模板推荐
+- [天使童装](https://github.com/EastWorld/wechat-app-mall)   /  [码云镜像](https://gitee.com/javazj/wechat-app-mall)
+- [天使童装（uni-app版本）](https://github.com/gooking/uni-app-mall)  /   [码云镜像](https://gitee.com/javazj/uni-app-mall)
+- [简约精品商城（uni-app版本）](https://github.com/gooking/uni-app--mini-mall)  /   [码云镜像](https://gitee.com/javazj/uni-app--mini-mall)
+- [舔果果小铺（升级版）](https://github.com/gooking/TianguoguoXiaopu)
+- [面馆风格小程序](https://gitee.com/javazj/noodle_shop_procedures)
+- [AI名片](https://github.com/gooking/visitingCard)  /   [码云镜像](https://gitee.com/javazj/visitingCard)
+- [仿海底捞订座排队 (uni-app)](https://github.com/gooking/dingzuopaidui)  /   [码云镜像](https://gitee.com/javazj/dingzuopaidui)
+- [H5版本商城/餐饮](https://github.com/gooking/vueMinishop)  /  [码云镜像](https://gitee.com/javazj/vueMinishop)
+- [餐饮点餐](https://github.com/woniudiancang/bee)  / [码云镜像](https://gitee.com/woniudiancang/bee)
+- [企业微展](https://github.com/gooking/qiyeweizan)  / [码云镜像](https://gitee.com/javazj/qiyeweizan)
+- [无人棋牌室](https://github.com/gooking/wurenqipai)  / [码云镜像](https://gitee.com/javazj/wurenqipai)
+- [酒店客房服务小程序](https://github.com/gooking/hotelRoomService)  / [码云镜像](https://gitee.com/javazj/hotelRoomService)
+- [面包店风格小程序](https://github.com/gooking/bread)  / [码云镜像](https://gitee.com/javazj/bread)
+- [朋友圈发圈素材小程序](https://github.com/gooking/moments)  / [码云镜像](https://gitee.com/javazj/moments)
 
 ## 联系作者
 
-| 微信好友 | 支付宝好友 |
+| 微信好友 | QQ好友 |
 | :------: | :------: |
-| <img src="https://cdn.it120.cc/apifactory/2019/07/03/a86f7e46-1dbc-42fe-9495-65403659671e.jpeg" width="200px"> | <img src="https://cdn.it120.cc/apifactory/2019/07/03/fda59aeb-4943-4379-93bb-92856740bd6a.jpeg" width="200px"> |
+| <img src="https://dcdn.it120.cc/2021/09/13/61a80363-9085-4a10-9447-e276a3d40ab3.jpeg" width="200px"> | <img src="https://dcdn.it120.cc/2021/09/13/08a598d8-8186-4159-9930-2e4908accc5e.png" width="200px"> |
 
 ## 本项目使用了下面的组件，在此鸣谢
 
@@ -43,13 +52,13 @@
 
 - [api工厂](https://admin.it120.cc)
 
-- [WeUI](https://github.com/Tencent/weui-wxss/)
-
 - [vant-weapp](https://youzan.github.io/vant-weapp)
 
-- [小程序富文本插件（html 渲染）](https://github.com/jin-yufeng/Parser)
+- [小程序富文本插件（html 渲染）](https://github.com/jin-yufeng/mp-html)
 
 - [小程序海报组件-生成朋友圈分享海报并生成图片](https://github.com/jasondu/wxa-plugin-canvas)
+
+- [Apache ECharts](https://github.com/ecomfe/echarts-for-weixin)
 
 底部ICON图标使用：
 https://www.iconfont.cn/collections/detail?spm=a313x.7781069.0.da5a778a4&cid=18904

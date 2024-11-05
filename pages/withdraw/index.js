@@ -21,7 +21,7 @@ Page({
   onShow: function() {
     AUTH.checkHasLogined().then(isLogined => {
       if (!isLogined) {
-        AUTH.openLoginDialog()
+        AUTH.login(this)
       } else {
         this.userAmount()
       }
@@ -34,16 +34,6 @@ Page({
         balance: res.data.balance
       })
     }
-  },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
   },
   async bindSave() {
     let minWidthAmount = wx.getStorageSync('WITHDRAW_MIN');
@@ -58,7 +48,7 @@ Page({
       })
       return
     }
-    if (this.data.balance_pay_pwd && !this.data.pwd) {
+    if (this.data.balance_pay_pwd == '1' && !this.data.pwd) {
       wx.showToast({
         title: '请输入交易密码',
         icon: 'none'
@@ -72,10 +62,22 @@ Page({
       })
       return
     }
+    if (amount * 1 > 2000) {
+      if (!this.data.name) {
+        wx.showToast({
+          title: '请输入真实姓名',
+          icon: 'none'
+        })
+        return
+      }
+    } else {
+      this.data.name = ''
+    }
     const res = await WXAPI.withDrawApplyV2({
       token: wx.getStorageSync('token'),
       money: amount,
-      pwd: this.data.pwd
+      pwd: this.data.pwd ? this.data.pwd : '',
+      name: this.data.name ? this.data.name : '',
     })
     if (res.code == 0) {
       wx.showModal({

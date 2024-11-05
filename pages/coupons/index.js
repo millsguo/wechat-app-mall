@@ -36,9 +36,6 @@ Page({
       this.sysCoupons()
     }
     AUTH.checkHasLogined().then(isLogined => {
-      this.setData({
-        isLogined
-      })
       if (isLogined) {
         if (this.data.activeIndex == 1) {
           this.getMyCoupons()
@@ -125,6 +122,12 @@ Page({
       token: wx.getStorageSync('token'),
       pwd: this.data.couponPwd
     }).then(function (res) {
+      if (res.code == 2000) {
+        wx.navigateTo({
+            url: '/pages/login/index',
+        })
+        return
+      }
       if (res.code == 20001 || res.code == 20002) {
         wx.showModal({
           title: '错误',
@@ -183,6 +186,12 @@ Page({
       wx.hideLoading({
         success: (res) => {},
       })
+      if (res.code == 2000) {
+        wx.navigateTo({
+            url: '/pages/login/index',
+        })
+        return
+      }
       if (res.code == 0) {
         res.data.forEach(ele => {
           if (ele.dateEnd) {
@@ -222,10 +231,47 @@ Page({
       }
     })
   },
-  toIndexPage: function () {
-    wx.switchTab({
-      url: "/pages/index/index"
-    });
+  async touse(e) {
+    const item = e.currentTarget.dataset.item
+    const res = await WXAPI.couponDetail(item.pid)
+    if (res.code != 0) {
+      wx.showToast({
+        title: res.msg,
+        icon: 'none'
+      })
+      return
+    }
+    if (!res.data.couponRefs || res.data.couponRefs.length == 0) {
+      wx.switchTab({
+        url: "/pages/index/index"
+      })
+      return
+    }
+    let categoryId, goodsId
+    res.data.couponRefs.forEach(ele => {
+      if (ele.type == 0) {
+        if (categoryId) {
+          categoryId = categoryId + ',' + ele.refId
+        } else {
+          categoryId = ele.refId
+        }
+      }
+      if (ele.type == 1) {
+        goodsId = ele.refId
+      }
+    })
+    if (categoryId) {
+      wx.navigateTo({
+        url: '/pages/goods/list?categoryId=' + categoryId,
+      })
+      return
+    }
+    if (goodsId) {
+      wx.navigateTo({
+        url: '/pages/goods-details/index?id=' + goodsId,
+      })
+      return
+    }
   },
   pwdCouponChange(e){
     this.setData({
@@ -248,16 +294,6 @@ Page({
     this.setData({
       showPwdPop: false
     })
-  },
-  processLogin(e) {
-    if (!e.detail.userInfo) {
-      wx.showToast({
-        title: '已取消',
-        icon: 'none',
-      })
-      return;
-    }
-    AUTH.register(this);
   },
   async exchangeCoupons() {
     if (!this.data.number) {

@@ -1,9 +1,13 @@
+<wxs src="./index.wxs" module="computed" />
+<wxs src="../wxs/utils.wxs" module="utils" />
 <view class="van-calendar">
   <header
     title="{{ title }}"
     showTitle="{{ showTitle }}"
     subtitle="{{ subtitle }}"
     showSubtitle="{{ showSubtitle }}"
+    firstDayOfWeek="{{ firstDayOfWeek }}"
+    bind:click-subtitle="onClickSubtitle"
   >
     <slot name="title" slot="title"></slot>
   </header>
@@ -31,6 +35,7 @@
       showSubtitle="{{ showSubtitle }}"
       allowSameDay="{{ allowSameDay }}"
       showMonthTitle="{{ index !== 0 || !showSubtitle }}"
+      firstDayOfWeek="{{ firstDayOfWeek }}"
       bind:click="onClickDay"
     />
   </scroll-view>
@@ -51,12 +56,12 @@
       type="danger"
       color="{{ color }}"
       custom-class="van-calendar__confirm"
-      disabled="{{ computed.getButtonDisabled(type, currentDate) }}"
+      disabled="{{ computed.getButtonDisabled(type, currentDate, minRange) }}"
       nativeType="text"
       bind:click="onConfirm"
     >
       {{
-        computed.getButtonDisabled(type, currentDate)
+        computed.getButtonDisabled(type, currentDate, minRange)
           ? confirmDisabledText
           : confirmText
       }}

@@ -1,14 +1,7 @@
-const CONFIG = require('../../config.js')
 const WXAPI = require('apifm-wxapi')
 const AUTH = require('../../utils/auth')
 const TOOLS = require('../../utils/tools.js')
-
-const APP = getApp()
-// fixed首次打开不显示标题的bug
-APP.configLoadOK = () => {
-  
-}
-
+const CONFIG = require('../../config.js')
 Page({
 	data: {
     balance:0.00,
@@ -23,37 +16,46 @@ Page({
     count_id_no_pay: 0,
     count_id_no_reputation: 0,
     count_id_no_transfer: 0,
-
-    // 判断有没有用户详细资料
-    userInfoStatus: 0 // 0 未读取 1 没有详细信息 2 有详细信息
+    nick: undefined,
   },
 	onLoad() {
-
+    this.readConfigVal()
+    // 补偿写法
+    getApp().configLoadOK = () => {
+      this.readConfigVal()
+    }
 	},
   onShow() {
-    const _this = this
-    const order_hx_uids = wx.getStorageSync('order_hx_uids')
-    this.setData({
-      version: CONFIG.version,
-      order_hx_uids
-    })
     AUTH.checkHasLogined().then(isLogined => {
       if (isLogined) {
-        _this.getUserApiInfo();
-        _this.getUserAmount();
-        _this.orderStatistics();
+        this.getUserApiInfo();
+        this.getUserAmount();
+        this.orderStatistics();
+        this.cardMyList();
         TOOLS.showTabBarBadge();
       } else {
-        AUTH.authorize().then(res => {
-          _this.getUserApiInfo();
-          _this.getUserAmount();
-          _this.orderStatistics();
+        getApp().loginOK = () => {
+          this.getUserApiInfo();
+          this.getUserAmount();
+          this.orderStatistics();
+          this.cardMyList();
           TOOLS.showTabBarBadge();
-        })
+        }
       }
     })
-    AUTH.wxaCode().then(code => {
-      this.data.code = code
+  },
+  readConfigVal() {
+    this.setData({
+      order_hx_uids: wx.getStorageSync('order_hx_uids'),
+      cps_open: wx.getStorageSync('cps_open'),
+      recycle_open: wx.getStorageSync('recycle_open'),
+      show_3_seller: wx.getStorageSync('show_3_seller'),
+      show_quan_exchange_score: wx.getStorageSync('show_quan_exchange_score'),
+      show_score_exchange_growth: wx.getStorageSync('show_score_exchange_growth'),
+      show_score_sign: wx.getStorageSync('show_score_sign'),
+      fx_type: wx.getStorageSync('fx_type'),
+      invoice_open: wx.getStorageSync('invoice_open'),
+      customerServiceType: CONFIG.customerServiceType
     })
   },
   async getUserApiInfo() {
@@ -64,17 +66,9 @@ Page({
       if (res.data.base.mobile) {
         _data.userMobile = res.data.base.mobile
       }
-      if (res.data.base.nick && res.data.base.avatarUrl) {
-        _data.userInfoStatus = 2
-      } else {
-        _data.userInfoStatus = 1
-      }
+      _data.nick = res.data.base.nick
       if (this.data.order_hx_uids && this.data.order_hx_uids.indexOf(res.data.base.id) != -1) {
         _data.canHX = true // 具有扫码核销的权限
-      }
-      const adminUserIds = wx.getStorageSync('adminUserIds')
-      if (adminUserIds && adminUserIds.indexOf(res.data.base.id) != -1) {
-        _data.isAdmin = true
       }
       if (res.data.peisongMember && res.data.peisongMember.status == 1) {
         _data.memberChecked = false
@@ -146,11 +140,17 @@ Page({
   },
   scanOrderCode(){
     wx.scanCode({
-      onlyFromCamera: true,
       success(res) {
-        wx.navigateTo({
-          url: '/pages/order-details/scan-result?hxNumber=' + res.result,
-        })
+        console.log('res', res);
+        if (res.scanType == 'WX_CODE' && res.path) {
+          wx.navigateTo({
+            url: '/' + res.path,
+          })
+        } else {
+          wx.navigateTo({
+            url: '/pages/order-details/scan-result?hxNumber=' + res.result,
+          })
+        }
       },
       fail(err) {
         console.error(err)
@@ -161,42 +161,102 @@ Page({
       }
     })
   },
-  async updateUserInfo(e) {
-    if (!e.detail.errMsg || e.detail.errMsg != "getUserInfo:ok") {
-      wx.showModal({
-        title: '提示',
-        content: e.detail.errMsg,
-        showCancel: false
-      })
-      return;
-    }
-    wx.showLoading({
-      title: '',
+  gogrowth() {
+    wx.navigateTo({
+      url: '/pages/score/growth',
     })
-    const res = await WXAPI.encryptedData(this.data.code, e.detail.encryptedData, e.detail.iv)
-    wx.hideLoading({
-      success: (res) => {},
-    })
-    AUTH.wxaCode().then(code => {
-      this.data.code = code
-    })
+  },
+  async cardMyList() {
+    const res = await WXAPI.cardMyList(wx.getStorageSync('token'))
     if (res.code == 0) {
-      // 更新用户资料
-      await WXAPI.modifyUserInfo({
-        token: wx.getStorageSync('token'),
-        avatarUrl: res.data.avatarUrl,
-        nick: res.data.nickName,
-        province: res.data.province,
-        city: res.data.city,
-        gender: res.data.gender,
-      })
-      this.getUserApiInfo();
-    } else {
-      wx.showModal({
-        title: '错误',
-        content: res.msg,
-        showCancel: false
-      })
+      const myCards = res.data.filter(ele => { return ele.status == 0 })
+      if (myCards.length > 0) {
+        this.setData({
+          myCards: res.data
+        })
+      }
     }
+  },
+  editNick() {
+    this.setData({
+      nickShow: true
+    })
+  },
+  async _editNick() {
+    if (!this.data.nick) {
+      wx.showToast({
+        title: '请填写昵称',
+        icon: 'none'
+      })
+      return
+    }
+    const postData = {
+      token: wx.getStorageSync('token'),
+      nick: this.data.nick,
+    }
+    const res = await WXAPI.modifyUserInfo(postData)
+    if (res.code != 0) {
+      wx.showToast({
+        title: res.msg,
+        icon: 'none'
+      })
+      return
+    }
+    wx.showToast({
+      title: '设置成功',
+    })
+    this.getUserApiInfo()
+  },
+  async onChooseAvatar(e) {
+    console.log(e);
+    const avatarUrl = e.detail.avatarUrl
+    let res = await WXAPI.uploadFileV2(wx.getStorageSync('token'), avatarUrl)
+    if (res.code != 0) {
+      wx.showToast({
+        title: res.msg,
+        icon: 'none'
+      })
+      return
+    }
+    res = await WXAPI.modifyUserInfo({
+      token: wx.getStorageSync('token'),
+      avatarUrl: res.data.url,
+    })
+    if (res.code != 0) {
+      wx.showToast({
+        title: res.msg,
+        icon: 'none'
+      })
+      return
+    }
+    wx.showToast({
+      title: '设置成功',
+    })
+    this.getUserApiInfo()
+  },
+  goUserCode() {
+    wx.navigateTo({
+      url: '/pages/my/user-code',
+    })
+  },
+  customerService() {
+    wx.openCustomerServiceChat({
+      extInfo: {url: wx.getStorageSync('customerServiceChatUrl')},
+      corpId: wx.getStorageSync('customerServiceChatCorpId'),
+      success: res => {},
+      fail: err => {
+        console.error(err)
+      }
+    })
+  },
+  copyUid() {
+    wx.setClipboardData({
+      data: this.data.apiUserInfoMap.base.id + '',
+    })
+  },
+  login() {
+    wx.navigateTo({
+      url: '/pages/login/index',
+    })
   },
 })
